@@ -11,7 +11,10 @@
 using namespace std;
 
 map<string, vector<pair<ll, int>>> global_skills_map;
+map<string, vector<string>> output_map;
+ll current_day = 0;
 
+// classes
 class contributer
 {
 public:
@@ -96,7 +99,30 @@ public:
 			requirements.push_back(make_pair(skill_reqd, skill_level));
 		}
 	}
+
+	ll project_score()
+	{
+		ll completion_date = current_day + duration;
+
+		if (completion_date <= best_before)
+			return score;
+
+		if (score > completion_date - best_before)
+			return score - (completion_date - best_before);
+
+		return 0;
+	}
 };
+
+struct contributers_available
+{
+	vector<ll> index_of_contributors;
+	ll completion_date;
+	bool available;
+};
+
+vector<contributer> contributers_array;
+vector<project> projects_array;
 
 bool sort_by_skill(const pair<ll, int> &a, const pair<ll, int> &b)
 {
@@ -105,7 +131,7 @@ bool sort_by_skill(const pair<ll, int> &a, const pair<ll, int> &b)
 
 void sort_global_skills_map()
 {
-	for (auto it : global_skills_map)
+	for (auto &it : global_skills_map)
 		sort(it.second.begin(), it.second.end(), sort_by_skill);
 }
 
@@ -117,7 +143,75 @@ bool sort_project(const project &a, const project &b)
 void initializeIO()
 {
 	freopen("input.txt", "r", stdin);
-	freopen("outputs.txt", "w", stdout);
+	freopen("global_skill_map.txt", "w", stdout);
+}
+
+void print_global_skills_map()
+{
+	for (auto i : global_skills_map)
+	{
+		cout << i.first << "\n";
+		for (auto j : i.second)
+		{
+			cout << contributers_array[j.first].name << " ";
+			cout << j.second << endl;
+		}
+		cout << "----------------------------\n";
+	}
+}
+
+contributers_available check_if_contributer_available(project proj)
+{
+	contributers_available obj;
+	for (auto req : proj.requirements)
+	{
+		bool flag = false;
+		for (auto contri : global_skills_map[req.first])
+		{
+			if (contri.second >= req.second && contributers_array[contri.first].free_after <= current_day)
+			{
+				obj.index_of_contributors.push_back(contri.first);
+				flag = true;
+				break;
+			}
+		}
+		if (!flag)
+		{
+			obj.available = false;
+			return obj;
+		}
+	}
+
+	obj.available = true;
+	obj.completion_date = current_day + proj.duration;
+	return obj;
+}
+
+void update_free_time_of_contributers(contributers_available a)
+{
+	for (ll i : a.index_of_contributors)
+		contributers_array[i].free_after = a.completion_date;
+}
+
+void select_project(project proj)
+{
+
+	contributers_available contri_avai = check_if_contributer_available(proj);
+
+	if (proj.project_score() && contri_avai.available)
+	{
+		vector<string> names_of_contris;
+		update_free_time_of_contributers(contri_avai);
+		for (ll k : contri_avai.index_of_contributors)
+			names_of_contris.push_back(contributer_array[k].name);
+
+		output_map.insert(make_pair(project.name, names_of_contris));
+	}
+}
+
+void solution()
+{
+
 }
 
 int main()
@@ -127,14 +221,12 @@ int main()
 	ll c, p;
 	cin >> c >> p;
 
-	vector<contributer> contributers_array;
 	for (ll i = 0; i < c; ++i)
 	{
 		contributer temp(i);
 		contributers_array.push_back(temp);
 	}
 
-	vector<project> projects_array;
 	for (ll i = 0; i < p; ++i)
 	{
 		project temp;
@@ -144,37 +236,31 @@ int main()
 	sort_global_skills_map();
 	sort(projects_array.begin(), projects_array.end(), sort_project);
 
+	print_global_skills_map();
+
 	// for (auto it : projects_array)
 	// {
-	// 	cout << it.name << "\n";
+	// 	for (auto &req : it.requirements)
+	// 	{
+	// 		for (auto &cont : global_skills_map[req.first])
+	// 		{
+	// 			bool flag = false;
+	// 			if (cont.second >= req.second)
+	// 			{
+	// 				if (contributers_array[cont.first].free_after >= currentDay)
+	// 					break;
+
+	// 				if (cont.second == req.second)
+	// 				{
+	// 					++cont.second;
+	// 					flag = true;
+	// 				}
+
+	// 				contributers_array[cont.first].free_after += it.duration;
+	// 			}
+	// 		}
+	// 	}
 	// }
-
-	map<string, vector<string>> output;
-	ll currentDay = 0;
-
-	for (auto it : projects_array)
-	{
-		for (auto req : it.requirements)
-		{
-			for (auto cont : global_skills_map[req.first])
-			{
-				bool flag = false;
-				if (cont.second >= req.second)
-				{
-					if (contributers_array[cont.first].free_after >= currentDay)
-						break;
-
-					if (cont.second == req.second)
-					{
-						++cont.second;
-						flag = true;
-					}
-
-					contributers_array[cont.first].free_after += it.duration
-				}
-			}
-		}
-	}
 
 	return 0;
 }
