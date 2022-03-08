@@ -1,5 +1,4 @@
 #include <bits/stdc++.h>
-
 #define ll long long int
 
 using namespace std;
@@ -19,7 +18,7 @@ public:
 
 	contributer(ll index)
 	{
-		free_after = 0;
+		free_after = -1;
 
 		string contributer_name;
 		cin >> contributer_name;
@@ -136,8 +135,8 @@ bool sort_project(const project &a, const project &b)
 
 void initializeIO()
 {
-	freopen("input.txt", "r", stdin);
-	freopen("output.txt", "w", stdout);
+	freopen("input_data/f.txt", "r", stdin);
+	freopen("outputs/f.txt", "w", stdout);
 }
 
 void print_global_skills_map()
@@ -162,9 +161,10 @@ contributers_available check_if_contributer_available(project proj)
 		bool flag = false;
 		for (auto contri : global_skills_map[req.first])
 		{
-			if (contri.second >= req.second && contributers_array[contri.first].free_after <= current_day)
+			if (contri.second >= req.second && contributers_array[contri.first].free_after < current_day)
 			{
 				obj.index_of_contributors.push_back(contri.first);
+				contributers_array[contri.first].free_after = current_day + proj.duration;
 				flag = true;
 				break;
 			}
@@ -189,7 +189,6 @@ void update_free_time_of_contributers(contributers_available a)
 
 bool select_project(project &proj)
 {
-
 	contributers_available contri_avai = check_if_contributer_available(proj);
 
 	if (proj.project_score() && contri_avai.available)
@@ -214,9 +213,9 @@ void print_output()
 	{
 		cout << i.first << "\n";
 		for (ll j = 0; j < i.second.size(); ++j)
-		{
 			cout << i.second[j] << " ";
-		}
+
+		cout << "\n";
 	}
 }
 
@@ -224,8 +223,8 @@ void solution()
 {
 	for (auto &i : projects_array)
 	{
-		select_project(i);
-		current_day += i.duration - 1;
+		if (select_project(i))
+			current_day += i.duration;
 	}
 }
 
@@ -235,6 +234,9 @@ void solution2()
 	ll min_days = 0;
 	while (true)
 	{
+		// maintain project completion dates vector
+		// and get minimum first value and delete it for next time.
+
 		current_day += min_days;
 		flag = true;
 
