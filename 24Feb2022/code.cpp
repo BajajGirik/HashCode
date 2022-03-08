@@ -1,10 +1,4 @@
-#include <iostream>
-#include <vector>
-#include <unordered_map>
-#include <map>
-#include <stdlib.h>
-#include <string>
-#include <utility>
+#include <bits/stdc++.h>
 
 #define ll long long int
 
@@ -143,7 +137,7 @@ bool sort_project(const project &a, const project &b)
 void initializeIO()
 {
 	freopen("input.txt", "r", stdin);
-	freopen("global_skill_map.txt", "w", stdout);
+	freopen("output.txt", "w", stdout);
 }
 
 void print_global_skills_map()
@@ -193,7 +187,7 @@ void update_free_time_of_contributers(contributers_available a)
 		contributers_array[i].free_after = a.completion_date;
 }
 
-void select_project(project proj)
+bool select_project(project &proj)
 {
 
 	contributers_available contri_avai = check_if_contributer_available(proj);
@@ -203,15 +197,60 @@ void select_project(project proj)
 		vector<string> names_of_contris;
 		update_free_time_of_contributers(contri_avai);
 		for (ll k : contri_avai.index_of_contributors)
-			names_of_contris.push_back(contributer_array[k].name);
+			names_of_contris.push_back(contributers_array[k].name);
 
-		output_map.insert(make_pair(project.name, names_of_contris));
+		output_map.insert(make_pair(proj.name, names_of_contris));
+		proj.completed = true;
+		return true;
+	}
+
+	return false;
+}
+
+void print_output()
+{
+	cout << output_map.size() << "\n";
+	for (auto i : output_map)
+	{
+		cout << i.first << "\n";
+		for (ll j = 0; j < i.second.size(); ++j)
+		{
+			cout << i.second[j] << " ";
+		}
 	}
 }
 
 void solution()
 {
+	for (auto &i : projects_array)
+	{
+		select_project(i);
+		current_day += i.duration - 1;
+	}
+}
 
+void solution2()
+{
+	bool flag;
+	ll min_days = 0;
+	while (true)
+	{
+		current_day += min_days;
+		flag = true;
+
+		while (flag)
+		{
+			flag = false;
+			for (auto &i : projects_array)
+			{
+				if (!i.completed and select_project(i))
+				{
+
+					flag = true;
+				}
+			}
+		}
+	}
 }
 
 int main()
@@ -235,32 +274,8 @@ int main()
 
 	sort_global_skills_map();
 	sort(projects_array.begin(), projects_array.end(), sort_project);
-
-	print_global_skills_map();
-
-	// for (auto it : projects_array)
-	// {
-	// 	for (auto &req : it.requirements)
-	// 	{
-	// 		for (auto &cont : global_skills_map[req.first])
-	// 		{
-	// 			bool flag = false;
-	// 			if (cont.second >= req.second)
-	// 			{
-	// 				if (contributers_array[cont.first].free_after >= currentDay)
-	// 					break;
-
-	// 				if (cont.second == req.second)
-	// 				{
-	// 					++cont.second;
-	// 					flag = true;
-	// 				}
-
-	// 				contributers_array[cont.first].free_after += it.duration;
-	// 			}
-	// 		}
-	// 	}
-	// }
+	solution();
+	print_output();
 
 	return 0;
 }
