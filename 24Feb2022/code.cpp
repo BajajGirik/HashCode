@@ -14,12 +14,13 @@ public:
 	string name;
 	int skills;
 	ll free_after;
+	bool already_included_for_project;
 	map<string, int> skill_and_level;
 
 	contributer(ll index)
 	{
 		free_after = -1;
-
+		already_included_for_project = false;
 		string contributer_name;
 		cin >> contributer_name;
 		name = contributer_name;
@@ -110,6 +111,7 @@ public:
 struct contributers_available
 {
 	vector<ll> index_of_contributors;
+	vector<pair<string, int>> improve_skill;
 	ll completion_date;
 	bool available;
 };
@@ -153,18 +155,30 @@ void print_global_skills_map()
 	}
 }
 
+void set_already_included_for_project(bool val) {
+	for(auto &c : contributers_array) {
+		c.already_included_for_project = val;
+	}
+}
+
 contributers_available check_if_contributer_available(project proj)
 {
 	contributers_available obj;
+	set_already_included_for_project(false);
+
 	for (auto req : proj.requirements)
 	{
 		bool flag = false;
 		for (auto contri : global_skills_map[req.first])
 		{
-			if (contri.second >= req.second && contributers_array[contri.first].free_after < current_day)
+			if (!contributers_array[contri.first].already_included_for_project && contri.second >= req.second && contributers_array[contri.first].free_after < current_day)
 			{
 				obj.index_of_contributors.push_back(contri.first);
-				contributers_array[contri.first].free_after = current_day + proj.duration;
+				if (contri.second == req.second)
+					obj.improve_skill.push_back(make_pair(req.first, 1));
+				else
+					obj.improve_skill.push_back(make_pair(req.first, 0));
+				contributers_array[contri.first].already_included_for_project = true;
 				flag = true;
 				break;
 			}
@@ -181,20 +195,28 @@ contributers_available check_if_contributer_available(project proj)
 	return obj;
 }
 
-void update_free_time_of_contributers(contributers_available a)
+void update_free_time_and_skills_of_contributers(contributers_available a)
 {
+	ll j = 0;
 	for (ll i : a.index_of_contributors)
+	{
 		contributers_array[i].free_after = a.completion_date;
+		contributers_array[i].skill_and_level[a.improve_skill[j].first] += a.improve_skill[j].second;
+		++j;
+	}
 }
 
 bool select_project(project &proj)
 {
+	if(proj.completed || proj.project_score() == 0)
+		return false;
+
 	contributers_available contri_avai = check_if_contributer_available(proj);
 
-	if (proj.project_score() && contri_avai.available)
+	if (contri_avai.available)
 	{
 		vector<string> names_of_contris;
-		update_free_time_of_contributers(contri_avai);
+		update_free_time_and_skills_of_contributers(contri_avai);
 		for (ll k : contri_avai.index_of_contributors)
 			names_of_contris.push_back(contributers_array[k].name);
 
@@ -230,29 +252,27 @@ void solution()
 
 void solution2()
 {
-	bool flag;
-	ll min_days = 0;
-	while (true)
+	vector<ll> days_until_next_proj_finishes;
+	ll prev = -1, curr = 0;
+	do
 	{
-		// maintain project completion dates vector
-		// and get minimum first value and delete it for next time.
-
-		current_day += min_days;
-		flag = true;
-
-		while (flag)
+		if (prev == curr)
 		{
-			flag = false;
-			for (auto &i : projects_array)
-			{
-				if (!i.completed and select_project(i))
-				{
-
-					flag = true;
-				}
-			}
+			sort(days_until_next_proj_finishes.begin(), days_until_next_proj_finishes.end());
+			current_day = days_until_next_proj_finishes[0];
+			days_until_next_proj_finishes.erase(days_until_next_proj_finishes.begin());
 		}
-	}
+
+		for (auto &i : projects_array)
+		{
+			if (select_project(i))
+				days_until_next_proj_finishes.push_back(current_day + i.duration);
+		}
+
+		prev = curr;
+		curr = days_until_next_proj_finishes.size();
+
+	} while (!days_until_next_proj_finishes.empty());
 }
 
 int main()
@@ -276,7 +296,7 @@ int main()
 
 	sort_global_skills_map();
 	sort(projects_array.begin(), projects_array.end(), sort_project);
-	solution();
+	solution2();
 	print_output();
 
 	return 0;
